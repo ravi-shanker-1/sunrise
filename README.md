@@ -1,2 +1,1 @@
-# sunrise
-This is my personal site
+Tech pulse app
