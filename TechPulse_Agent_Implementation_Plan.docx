@@ -1,0 +1,382 @@
+TechPulse
+Weekly AI Learning App
+Agent Implementation Plan
+
+Prepared by: Ravi Shanker
+Date: May 2, 2026
+Version: 1.0
+Platforms: iOS & Android (Cross-Platform)
+ 
+Table of Contents
+1. App Vision & Overview
+2. Functional Requirements
+    2.1 Onboarding & User Profile
+    2.2 Weekly Content Aggregation (Backend)
+    2.3 Newsletter View (Mobile)
+    2.4 Learning Plan
+    2.5 Settings & Preferences
+    2.6 Push Notifications
+3. Technical Architecture
+    3.1 Tech Stack Summary
+    3.2 Project Structure (Clean Architecture)
+    3.3 Key API Endpoints
+    3.4 High-Level Architecture Flow
+4. Performance Guidelines
+    4.1 Hard Performance Targets
+    4.2 Performance Implementation Rules
+5. Design Guidelines
+    5.1 Design System Foundation
+    5.2 Infographic Card Design Rules
+    5.3 UX Patterns
+    5.4 Design Reference Sources
+6. Reference Apps (Study & Benchmark)
+7. Do's and Don'ts
+    7.1 Architecture & Code
+    7.2 AI/LLM Integration
+    7.3 Performance
+    7.4 Security
+    7.5 UX & Design
+    7.6 Testing
+    7.7 Deployment & DevOps
+8. Non-Functional Requirements
+9. Suggested Implementation Phases
+10. Critical Success Metrics (Post-Launch KPIs)
+ 
+1. App Vision & Overview
+App Name: TechPulse (working title — agents can suggest alternatives)
+One-liner: A cross-platform mobile app that auto-curates the week’s most relevant tech topics based on a user’s selected technology stack, then generates an infographic-style newsletter and personalized learning plan every week.
+Target Platforms: iOS & Android (single codebase via Kotlin Multiplatform + Compose Multiplatform)
+Core Value Proposition:
+•	Eliminates information overload — users don’t manually browse 20+ sources
+•	Personalized to their exact tech stack (e.g., "Spring Boot + Kafka + PostgreSQL + Kubernetes")
+•	Delivers a visually rich, shareable weekly newsletter — not just a text dump
+•	Builds a cumulative learning plan that evolves weekly
+ 
+2. Functional Requirements
+2.1 Onboarding & User Profile
+Feature	Details
+Sign-up/Login	Email + password, Google OAuth, Apple Sign-In (required for iOS App Store). JWT-based auth tokens with refresh mechanism.
+Tech Stack Selector	Multi-select UI with categories: Languages (Java, Kotlin, Python, Go, Rust…), Frameworks (Spring Boot, Django, React, Angular…), Cloud (AWS, Azure, GCP…), DevOps (K8s, Docker, Terraform…), Data (PostgreSQL, Kafka, Redis…), AI/ML (LLMs, PyTorch, MLOps…). Allow custom tags.
+Interest Level	Per-topic: Beginner / Intermediate / Advanced — drives learning plan depth
+Notification Preferences	Day/time for weekly delivery, push notification toggle
+Profile Management	Edit tech stack, change delivery day, manage notification preferences
+
+2.2 Weekly Content Aggregation (Backend)
+Feature	Details
+Automated Cron Job	Runs every Sunday midnight UTC (configurable). Uses Spring Scheduler or Quartz.
+Source Aggregation	Pull from: Hacker News API, Dev.to API, Reddit API (subreddits per tech), GitHub Trending, RSS feeds (tech blogs), ArXiv (for AI/ML users), Stack Overflow trending tags, official release notes.
+AI Curation	Send aggregated raw content to LLM (OpenAI GPT-4o / Gemini) with structured prompt. LLM must: (1) Rank by relevance to user’s stack, (2) Deduplicate similar articles, (3) Categorize into sections, (4) Generate 2-3 sentence summaries per item, (5) Score difficulty level.
+Sections to Generate	What’s Hot This Week (top 5 trending), New Releases & Updates, Deep Dive (1 long-form recommendation), Quick Tips (3-5 actionable tips), Weekly Learning Path (ordered resources), Try This (hands-on exercise idea)
+Caching	Store generated content in Redis with 7-day TTL. Serve from cache for subsequent requests within the week.
+
+2.3 Newsletter View (Mobile)
+Feature	Details
+Infographic Cards	Each section rendered as a visually distinct card with icons, color coding, progress indicators, and micro-animations. NOT plain text lists.
+Swipeable Sections	Horizontal swipe between newsletter sections (What’s Hot → Deep Dive → Tips → Learning Path)
+Source Links	Tap any item to open the original article in an in-app browser (Custom Tabs on Android / SFSafariViewController on iOS)
+Bookmark / Save	Save individual items for later reading
+Share	Share entire newsletter or individual cards as image/PDF via native share sheet
+Archive	Access all past weekly newsletters in a scrollable timeline
+
+2.4 Learning Plan
+Feature	Details
+Weekly Learning Path	AI-generated ordered learning sequence: Read articles → Watch video → Complete exercise
+Progress Tracking	Checkbox-style completion tracking per item. Persist progress across sessions.
+Streak Counter	Consecutive weeks of completing the learning plan (gamification)
+Cumulative Dashboard	Monthly/quarterly view showing topics covered, time invested, skills leveled up
+Adaptive Difficulty	If user consistently completes Advanced content, auto-adjust next week’s plan upward
+
+2.5 Settings & Preferences
+Feature	Details
+Dark/Light/System Theme	Follow system preference by default, allow manual override
+Delivery Day	Choose which day the weekly newsletter is generated
+Content Density	Compact (5 items) / Standard (10 items) / Detailed (15+ items)
+Language	English (v1). Architect for i18n from day one.
+Data & Privacy	Export data, delete account, privacy policy display
+
+2.6 Push Notifications
+Feature	Details
+Weekly Delivery	"Your weekly TechPulse is ready!" — sent when newsletter generation completes
+Streak Reminder	Mid-week nudge if learning plan not started: "Don’t break your 4-week streak!"
+Trending Alert (v2)	Breaking tech news relevant to user’s stack
+ 
+3. Technical Architecture
+3.1 Tech Stack Summary
+Layer	Technology
+Mobile Framework	Kotlin Multiplatform + Compose Multiplatform
+Mobile Language	Kotlin
+Backend	Kotlin + Spring Boot (or Java + Spring Boot)
+API	RESTful (JSON over HTTPS)
+Primary Database	PostgreSQL
+Local Database	SQLDelight (cross-platform)
+Caching	Redis
+AI/LLM	OpenAI API (GPT-4o) or Google Gemini API
+Push Notifications	Firebase Cloud Messaging (FCM)
+Cloud	GCP or Azure
+CI/CD	GitHub Actions + Fastlane (iOS) + Gradle (Android)
+Analytics	Firebase Analytics
+Crash Reporting	Firebase Crashlytics
+
+3.2 Project Structure (Clean Architecture)
+Follow multi-module clean architecture as per KMP best practices:
+project-root/
+├── core/
+│   ├── network/              # Ktor client, API service interfaces
+│   ├── database/             # SQLDelight schemas, DAOs
+│   ├── common/               # Shared utilities, extensions, constants
+│   ├── designsystem/         # Theme, colors, typography, reusable components
+├── features/
+│   ├── onboarding/
+│   │   ├── domain/           # Use cases: SelectTechStack, SetPreferences
+│   │   ├── data/             # Repository implementations
+│   │   ├── presentation/     # Compose screens + ViewModels
+│   ├── newsletter/
+│   │   ├── domain/           # Use cases: GetWeeklyNewsletter, BookmarkItem
+│   │   ├── data/             # Repository, API models, mappers
+│   │   ├── presentation/     # Infographic cards, swipeable views
+│   ├── learningplan/
+│   │   ├── domain/           # Use cases: GetLearningPlan, TrackProgress
+│   │   ├── data/
+│   │   ├── presentation/
+│   ├── profile/
+│   ├── settings/
+├── composeApp/               # App module: navigation, DI, theme
+│   ├── src/commonMain/
+│   ├── src/androidMain/
+│   ├── src/iosMain/
+├── androidApp/               # Android entry point
+├── iosApp/                   # iOS entry point (Xcode project)
+
+3.3 Key API Endpoints
+Method	Endpoint	Description
+POST	/api/v1/auth/register	User registration
+POST	/api/v1/auth/login	Login, returns JWT
+PUT	/api/v1/user/techstack	Update selected technologies
+GET	/api/v1/newsletter/weekly	Get current week’s newsletter
+GET	/api/v1/newsletter/archive?page=1	Paginated past newsletters
+GET	/api/v1/learning-plan/current	Current week’s learning plan
+PUT	/api/v1/learning-plan/progress	Update item completion status
+POST	/api/v1/newsletter/items/{id}/bookmark	Bookmark an item
+GET	/api/v1/user/stats	Streak, topics covered, progress
+
+3.4 High-Level Architecture Flow
+┌─────────────────────────────────────────────────────────┐
+│                    WEEKLY CRON JOB                       │
+│  Spring Scheduler triggers content aggregation          │
+└──────────────┬──────────────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────┐    ┌──────────────────────────┐
+│  Content Aggregator      │───▶│  News/RSS/Dev APIs        │
+│  (Jsoup, REST clients)   │    │  (HackerNews, Dev.to,    │
+│                          │    │   NewsAPI, Reddit)        │
+└──────────────┬───────────┘    └──────────────────────────┘
+               │
+               ▼
+┌──────────────────────────┐
+│  AI Engine (OpenAI/Gemini)│
+│  • Curate & rank topics  │
+│  • Generate newsletter   │
+│  • Build learning plan   │
+└──────────────┬───────────┘
+               │
+               ▼
+┌──────────────────────────┐    ┌──────────────────────────┐
+│  PostgreSQL              │    │  Redis Cache             │
+│  • User profiles         │    │  • Weekly content        │
+│  • Newsletter archive    │    │  • API response cache    │
+│  • Learning progress     │    └──────────────────────────┘
+└──────────────┬───────────┘
+               │
+               ▼
+┌──────────────────────────┐
+│  REST API (Spring Boot)  │
+│  /newsletter/weekly      │
+│  /learning-plan/{userId} │
+│  /topics/trending        │
+└──────────────┬───────────┘
+               │
+        ┌──────┴──────┐
+        │  FCM Push   │
+        └──────┬──────┘
+               │
+       ┌───────┴───────┐
+       ▼               ▼
+┌─────────────┐ ┌─────────────┐
+│  iOS App    │ │ Android App │
+│  (Compose   │ │ (Compose    │
+│  Multi-     │ │  Multi-     │
+│  platform)  │ │  platform)  │
+└─────────────┘ └─────────────┘
+ 
+4. Performance Guidelines
+4.1 Hard Performance Targets
+Metric	Target	Measurement Tool
+Cold Start	< 2 seconds (warm < 1s)	Firebase Performance / Xcode Instruments
+Frame Rate	60fps minimum, 0 jank frames during scroll	Android Studio Profiler / Xcode GPU Debug
+API Response Time	< 500ms (p95) for newsletter fetch	Micrometer + Prometheus
+App Size	< 50MB initial download	Build analysis
+Memory Usage	< 200MB peak on mid-range devices	Profiler tools
+Crash-Free Rate	> 99.8%	Firebase Crashlytics
+ANR Rate (Android)	< 0.1%	Play Console Vitals
+Battery Drain	< 3% per 10 minutes active use	Battery profiling
+Offline Availability	Last newsletter available fully offline	SQLDelight local cache
+
+4.2 Performance Implementation Rules
+•	Lazy loading everywhere — Use LazyColumn / LazyRow for all lists. Never load all newsletter items at once.
+•	Image optimization — Use Coil (KMP-compatible) with disk caching, progressive loading, and WebP format. Limit infographic images to max 1080px width.
+•	Pagination — Archive endpoint must return paginated results (20 items/page). Implement infinite scroll with prefetch.
+•	Background work — All API calls and DB operations on Dispatchers.IO. Never block the main/UI thread.
+•	Startup optimization — Defer non-critical SDK init (analytics, crash reporting) until after first frame renders. Use async init where possible.
+•	Compose optimization — Mark stable classes with @Stable / @Immutable. Use remember and derivedStateOf to prevent unnecessary recompositions. Avoid allocations in @Composable functions.
+•	Network efficiency — Implement HTTP caching headers (ETag, Cache-Control). Use Ktor's content negotiation for GZIP compression. Retry with exponential backoff (max 3 retries).
+•	Database indexing — Index user_id, created_date, and tech_stack_tag columns in PostgreSQL. Use EXPLAIN ANALYZE on all queries during development.
+ 
+5. Design Guidelines
+5.1 Design System Foundation
+Element	Specification
+Design Language	Material Design 3 (Material You) with custom brand tokens
+Color Scheme	Dynamic color from device wallpaper (Android), curated palette (iOS). Dark mode mandatory.
+Typography	Inter (body) + JetBrains Mono (code snippets). Scale: Display → Headline → Title → Body → Label
+Spacing Grid	4dp base unit. Content padding: 16dp. Card gaps: 12dp.
+Corner Radius	Cards: 16dp. Buttons: 12dp. Chips/tags: 8dp.
+Elevation	Cards: 2dp rest, 8dp pressed. Bottom nav: 4dp.
+Animations	Use spring() physics for natural feel. Duration: 200-400ms for transitions. No animation > 500ms.
+
+5.2 Infographic Card Design Rules
+•	Each card MUST have a visual hierarchy: Icon/emoji → Title → Key stat/number → Supporting text → Source attribution
+•	Use data visualization where possible: progress bars, mini bar charts, trend arrows (↑↓→), percentage donuts
+•	Color-code by section: Red = What's Hot, Blue = New Releases, Green = Quick Tips, Yellow = Learning Path, Purple = Deep Dive
+•	Cards must be shareable as standalone images — render with proper padding and branding when exported
+•	Maximum 3 font sizes per card. Maximum 4 colors per card (including background).
+•	Infographic style reference: Think Morning Brew newsletter cards, Superhuman AI newsletter layout
+
+5.3 UX Patterns
+Pattern	Implementation
+Skeleton Screens	Show content placeholders (shimmer effect) while loading — never a blank screen or spinner
+Pull-to-Refresh	On newsletter and learning plan screens
+Bottom Navigation	4 tabs: Home (Newsletter), Learn (Plan), Archive, Profile
+Haptic Feedback	On bookmark tap, streak milestone, section swipe completion
+Empty States	Illustrated empty states with actionable CTA (e.g., "Select your tech stack to get started")
+Error States	Friendly error messages with retry button. Never show raw error codes or stack traces.
+Accessibility	Minimum touch target 48x48dp. Content descriptions on all icons. Support TalkBack/VoiceOver. Dynamic type scaling.
+
+5.4 Design Reference Sources
+Use Mobbin (https://mobbin.com/) for UI pattern research across hundreds of real iOS & Android apps. Study the apps listed in Section 6 for specific UI/UX patterns.
+ 
+6. Reference Apps (Study & Benchmark Against These)
+App	What to Study	Platform
+Superhuman AI Newsletter	Content curation format, 3-min read structure, topic categorization	Email/Web
+TLDR AI	Developer-focused AI newsletter format, technical content summarization	Email/Web
+Artifacts by Google	Infographic-style daily learning cards, visual storytelling on mobile	iOS & Android
+Flipboard	Card-based content curation, swipeable magazine UI, personalization engine	iOS & Android
+Feedly + Leo AI	AI-powered topic tracking, content aggregation, feed customization	iOS & Android
+Duolingo	Gamification (streaks, XP), learning plan progression, daily reminders, onboarding flow	iOS & Android
+Brilliant	Interactive learning paths, visual problem-solving UI, progressive difficulty	iOS & Android
+Pocket	Save-for-later UX, offline reading, tagging system, clean reading experience	iOS & Android
+Inoreader	RSS aggregation, filtering rules, keyword monitoring, developer-friendly	iOS & Android
+Morning Brew	Newsletter layout inspiration — clean, visual, shareable card format	Email
+ 
+7. Do's and Don'ts
+7.1 Architecture & Code
+✅ DO	❌ DON'T
+Follow Clean Architecture (domain → data → presentation) with clear dependency rules	Don't put business logic in Composables or ViewModels directly
+Use expect/actual declarations for platform-specific code (e.g., file system, biometrics)	Don't use #if ANDROID style conditional compilation — use proper KMP abstractions
+Write shared code in commonMain first; move to platform-specific only when necessary	Don't duplicate logic across androidMain and iosMain
+Use dependency injection (Koin — KMP-compatible)	Don't create singletons or global state manually
+Use Kotlin Coroutines + Flow for all async operations	Don't use callbacks or raw threads
+Use SQLDelight for local storage (type-safe, cross-platform)	Don't use platform-specific ORMs (Room, Core Data)
+Version all API endpoints (/api/v1/, /api/v2/)	Don't break existing API contracts without versioning
+Use sealed classes for UI state (Loading, Success, Error)	Don't use boolean flags for state management
+Use Ktor for HTTP client (KMP-native)	Don't use Retrofit (Android-only) or Alamofire (iOS-only)
+
+7.2 AI/LLM Integration
+✅ DO	❌ DON'T
+Use structured prompts with clear output format (JSON schema)	Don't send open-ended prompts and hope for consistent output
+Implement prompt versioning — store prompt templates in config/DB	Don't hardcode prompts in source code
+Set temperature=0.3 for newsletter generation (factual, consistent)	Don't use high temperature (>0.7) for content that needs to be reliable
+Validate LLM output against expected JSON schema before storing	Don't trust LLM output blindly — it can hallucinate URLs and facts
+Implement fallback: if LLM API fails, serve cached content from last week	Don't let the entire app break because an AI API is down
+Log token usage and cost per newsletter generation	Don't ignore API costs — they scale with users
+Rate-limit LLM calls — batch user requests, generate once per cohort	Don't call LLM separately for each user if they share the same tech stack
+
+7.3 Performance
+✅ DO	❌ DON'T
+Profile on mid-range devices (Pixel 6a, iPhone SE) — not flagships	Don't only test on Pixel 9 Pro / iPhone 16 Pro Max
+Implement offline-first: cache last newsletter in SQLDelight	Don't require network for basic app functionality
+Use LazyColumn with key parameter for stable list rendering	Don't use Column with forEach for dynamic lists
+Compress images server-side before sending to mobile (WebP, <200KB)	Don't send full-resolution images to mobile clients
+Implement proper lifecycle handling — cancel coroutines on screen exit	Don't leak coroutines or network calls when user navigates away
+Pre-generate newsletter PDFs server-side during cron job	Don't generate PDFs on-device — it's CPU/memory intensive
+
+7.4 Security
+✅ DO	❌ DON'T
+Use HTTPS everywhere. Pin certificates for API calls.	Don't allow HTTP or skip SSL verification even in debug
+Store tokens in platform keystore (Android Keystore / iOS Keychain)	Don't store JWT tokens in SharedPreferences / UserDefaults
+Implement token refresh with sliding expiry	Don't use long-lived tokens (>24h)
+Sanitize all user input before sending to LLM prompts (prevent prompt injection)	Don't pass raw user input into LLM prompts
+Use parameterized queries for all PostgreSQL operations	Don't concatenate SQL strings
+Implement rate limiting on all API endpoints (100 req/min/user)	Don't leave APIs open to abuse
+Obfuscate release builds (ProGuard/R8 for Android)	Don't ship debug builds to production
+
+7.5 UX & Design
+✅ DO	❌ DON'T
+Support dynamic text scaling (accessibility)	Don't use fixed pixel sizes for text
+Provide haptic feedback on meaningful interactions	Don't overuse haptics — only on bookmarks, streaks, completions
+Show skeleton/shimmer screens while loading	Don't show blank screens or generic spinners
+Design for thumb-zone reachability (bottom navigation, FABs)	Don't put primary actions at the top of the screen
+Test on both LTR and RTL layouts from day one	Don't assume left-to-right only
+Support landscape mode on tablets gracefully	Don't crash or clip content in landscape orientation
+Make the newsletter feel like a curated "magazine" — not a feed	Don't create another RSS reader with plain text lists
+
+7.6 Testing
+✅ DO	❌ DON'T
+Write unit tests for all use cases and repository implementations	Don't skip tests for "simple" logic
+Use Turbine for testing Kotlin Flows	Don't use Thread.sleep() in tests
+Write UI tests for critical flows (onboarding, newsletter load, bookmark)	Don't rely only on manual testing
+Test on real iOS devices — simulator misses real-world issues	Don't ship iOS without real device testing
+Implement screenshot testing for infographic cards (Paparazzi / Roborazzi)	Don't manually verify visual layouts across releases
+Aim for 80%+ code coverage in commonMain	Don't chase 100% coverage — focus on business logic
+
+7.7 Deployment & DevOps
+✅ DO	❌ DON'T
+Automate builds via GitHub Actions (separate workflows for Android/iOS/Backend)	Don't rely on manual builds and uploads
+Use feature flags (Firebase Remote Config) for gradual rollouts	Don't deploy new features to 100% of users on day one
+Implement app update prompts for breaking API changes	Don't let old app versions call deprecated APIs silently
+Set up Firebase Crashlytics + Performance Monitoring from day one	Don't wait for production issues to add observability
+Use semantic versioning (1.2.3) and maintain a CHANGELOG	Don't use arbitrary version numbers
+ 
+8. Non-Functional Requirements
+Category	Requirement
+Availability	99.9% uptime for backend API
+Scalability	Support 10K → 100K users without architecture changes
+Data Retention	Keep newsletter archive for 1 year. Allow user data export (GDPR).
+Localization	English v1. Architect all strings via resource files for future i18n.
+Accessibility	WCAG 2.1 AA compliance. TalkBack + VoiceOver support.
+Min OS Versions	Android 8.0 (API 26) / iOS 16.0
+App Store Compliance	Follow Apple HIG and Google Material guidelines. Privacy nutrition labels required for iOS.
+ 
+9. Suggested Implementation Phases
+Phase	Scope	Duration
+Phase 1 — Foundation	Project setup, KMP structure, design system, auth, tech stack selector, basic navigation	2-3 weeks
+Phase 2 — Backend Core	Spring Boot API, PostgreSQL schema, content aggregation cron, LLM integration, Redis caching	2-3 weeks
+Phase 3 — Newsletter MVP	Newsletter fetch + render, infographic cards, section navigation, offline cache	2-3 weeks
+Phase 4 — Learning Plan	Learning path generation, progress tracking, streak counter, stats dashboard	2 weeks
+Phase 5 — Polish	Share/export (PDF/image), push notifications (FCM), dark mode, animations, accessibility	2 weeks
+Phase 6 — Quality	Performance profiling, security audit, UI/screenshot tests, beta testing (TestFlight + Firebase)	1-2 weeks
+Phase 7 — Launch	App Store + Play Store submission, monitoring dashboards, post-launch fixes	1 week
+ 
+10. Critical Success Metrics (Post-Launch KPIs)
+Metric	Target
+Weekly Active Users (WAU)	Track growth week-over-week
+Newsletter Open Rate	> 60% of registered users open weekly newsletter
+Learning Plan Completion	> 30% of users complete at least 3 items/week
+Average Streak Length	> 4 consecutive weeks
+App Store Rating	> 4.5 stars
+Crash-Free Sessions	> 99.8%
+Cold Start Time	< 2 seconds (p95)
+
+
+— End of Document —
+
+This plan is designed to be agent-ready — any coding agent (Cursor, Copilot Workspace, Devin, or a human dev team) can pick up a phase and start building with clear boundaries, acceptance criteria, and guardrails.
