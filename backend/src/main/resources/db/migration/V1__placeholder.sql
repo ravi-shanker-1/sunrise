@@ -1,0 +1,38 @@
+-- Flyway V1 migration placeholder
+-- This file will be populated with the initial schema when ready to run migrations.
+--
+-- CREATE TABLE users (
+--     id BIGSERIAL PRIMARY KEY,
+--     email VARCHAR(255) UNIQUE NOT NULL,
+--     password_hash VARCHAR(255) NOT NULL,
+--     name VARCHAR(255) NOT NULL,
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
+--
+-- CREATE TABLE tech_stacks (
+--     id BIGSERIAL PRIMARY KEY,
+--     user_id BIGINT NOT NULL REFERENCES users(id),
+--     technologies JSONB DEFAULT '[]',
+--     interest_level VARCHAR(50) NOT NULL DEFAULT 'BEGINNER'
+-- );
+--
+-- CREATE TABLE newsletters (
+--     id BIGSERIAL PRIMARY KEY,
+--     user_id BIGINT NOT NULL REFERENCES users(id),
+--     week_start_date DATE NOT NULL,
+--     content JSONB DEFAULT '{}',
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     UNIQUE(user_id, week_start_date)
+-- );
+--
+-- CREATE TABLE learning_plans (
+--     id BIGSERIAL PRIMARY KEY,
+--     user_id BIGINT NOT NULL REFERENCES users(id),
+--     title VARCHAR(255) NOT NULL,
+--     description TEXT DEFAULT '',
+--     milestones JSONB DEFAULT '[]',
+--     progress_pct INT NOT NULL DEFAULT 0,
+--     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
